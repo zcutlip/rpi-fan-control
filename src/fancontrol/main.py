@@ -2,7 +2,7 @@
 
 import time
 
-from gpio import GPIO
+from .gpio import GPIO
 
 
 class RPiFanControl:
