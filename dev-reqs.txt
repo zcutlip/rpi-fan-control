@@ -1,0 +1,3 @@
+git+https://github.com/sn4k3/FakeRPi
+-e .
+-r requirements.txt
