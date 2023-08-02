@@ -16,6 +16,8 @@ class RPiFanControl:
     # moves at least this much
     TEMP_HYST = 2
 
+    # Maximum rise (100 duty cycle) over maximum run (upper - lower)
+    # is the linear slope we want the fan speed to follow
     FAN_SPEED_SLOPE = 100 / (TEMP_UPPER - TEMP_LOWER)
 
     def __init__(self):
@@ -49,6 +51,9 @@ class RPiFanControl:
         print(f"cpu temp: {cpu_temp:.2f}C")
         if self.temp_changed(cpu_temp):
             cpu_temp = max(cpu_temp, self.TEMP_LOWER)
+
+            # multiply the slope times the actual delta between current and
+            # minimum to get the desired duty cycle value
             speed = int(self.FAN_SPEED_SLOPE * (cpu_temp - self.TEMP_LOWER))
 
             # bracket speed to an upper bound of 100
