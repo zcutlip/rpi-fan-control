@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import signal
 import time
 
 from .gpio import GPIO
@@ -21,12 +22,14 @@ class RPiFanControl:
     FAN_SPEED_SLOPE = 100 / (TEMP_UPPER - TEMP_LOWER)
 
     def __init__(self):
+        signal.signal(signal.SIGTERM, self.exit_handler)
         self._saved_temp = -1
         GPIO.setmode(GPIO.BOARD)
         GPIO.setup(self.FAN_PIN, GPIO.OUT)
         p = GPIO.PWM(self.FAN_PIN, self.PWM_START_FREQ)
         p.start(0)
         self._pwm = p
+        self._finished = False
 
     def temp_changed(self, current_temp):
         # calculate if change is outside hysteresis
@@ -42,6 +45,13 @@ class RPiFanControl:
                 changed = True
 
         return changed
+
+    @property
+    def finished(self) -> bool:
+        return self._finished
+
+    def exit_handler(self, *args):
+        self._finished = True
 
     def update(self):
         cpu_temp = self.get_temp()
@@ -80,15 +90,17 @@ class RPiFanControl:
 
 
 def main():
-    f = RPiFanControl()
-    while True:
-        f.update()
-        time.sleep(2)
+    try:
+        f = RPiFanControl()
+        while not f.finished:
+            f.update()
+            time.sleep(2)
+        print("Shutting down.")
+        return 0
+    except KeyboardInterrupt:
+        print("Keyboard iterrupt. Quitting.")
+        return 127
 
 
 if __name__ == "__main__":
-    try:
-        main()
-    except KeyboardInterrupt:
-        print("Keyboard iterrupt. Quitting.")
-        exit(0)
+    exit(main())
